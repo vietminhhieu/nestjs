@@ -7,22 +7,57 @@ import {
   Patch,
   Post,
   Query,
+  Session,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
 import { GetAllUser } from './dto/get-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { SerializeInterceptor } from 'src/interceptors/serialize.interceptor';
+import {
+  Serialize,
+  SerializeInterceptor,
+} from 'src/interceptors/serialize.interceptor';
 import { UserDto } from './dto/user.dto';
+import { AuthService } from './auth.service';
+import { CurrentUser } from './decorator/current-user.decorator';
+import { CurrentUserInterceptor } from './interceptor/current-user.interceptor';
+import { User } from './user.entity';
+import { AuthGuard } from 'src/guards/auth.guard';
 
 @Controller('auth')
+@Serialize(UserDto)
+@UseInterceptors(CurrentUserInterceptor)
 export class UsersController {
-  constructor(private userService: UsersService) {}
+  constructor(
+    private userService: UsersService,
+    private authService: AuthService,
+  ) {}
+
+  @Get('who')
+  @UseGuards(AuthGuard)
+  who(@CurrentUser() user: User) {
+    return user;
+  }
 
   @Post('/signup')
-  async createUser(@Body() body: CreateUserDto) {
-    return await this.userService.create(body);
+  async createUser(@Body() body: CreateUserDto, @Session() session: any) {
+    const user = await this.authService.signUp(body);
+    session.userId = user.id;
+    return user;
+  }
+
+  @Post('/sign-in')
+  async signIn(@Body() body: CreateUserDto, @Session() session: any) {
+    const user = await this.authService.signIn(body);
+    session.userId = user.id;
+    return user;
+  }
+
+  @Post('sign-out')
+  async signOut(@Session() session: any) {
+    session.userId = null;
   }
 
   @UseInterceptors(new SerializeInterceptor(UserDto))

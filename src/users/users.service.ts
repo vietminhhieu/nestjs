@@ -5,16 +5,14 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Repository } from 'typeorm';
-import { UserEntity } from './user.entity';
+import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GetAllUser } from './dto/get-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(UserEntity) private userRepo: Repository<UserEntity>,
-  ) {}
+  constructor(@InjectRepository(User) private userRepo: Repository<User>) {}
 
   async create(body: CreateUserDto) {
     const { email, password } = body;
@@ -28,6 +26,9 @@ export class UsersService {
   }
 
   findOne(id: number) {
+    if (!id) {
+      return null;
+    }
     return this.userRepo.findOne({ where: { id } });
   }
 
